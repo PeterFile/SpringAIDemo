@@ -6,7 +6,13 @@ spring:
   cloud:
     nacos:
       server-addr: 192.168.85.129:8848
+  elasticsearch:
+    uris: 192.168.85.129:9200
   ai:
+    vectorstore:
+      elasticsearch:
+        initialize-schema: true
+        index-name: custom-index
     openai:
       base-url: ${SPRING_AI_OPENAI_BASE_URL:https://openrouter.ai/api}
       api-key: ${SPRING_AI_OPENAI_API_KEY:${OPENROUTER_API_KEY:}}
