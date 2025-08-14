@@ -2,11 +2,10 @@ package com.example.spring_ai_demo.service;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.UnknownContentTypeException;
 
@@ -20,13 +19,22 @@ public class ElasticsearchRAGService {
     private final ElasticsearchVectorStore vectorStore;
     private final ChatClient chatClient;
 
-    public ElasticsearchRAGService(ElasticsearchVectorStore  vectorStore, ChatClient.Builder chatClient) {
+    private final EmbeddingModel embeddingModel;
+
+    public ElasticsearchRAGService(ElasticsearchVectorStore  vectorStore, ChatClient.Builder chatClient, EmbeddingModel embeddingModel) {
         this.vectorStore = vectorStore;
         this.chatClient = chatClient.build();
+        this.embeddingModel = embeddingModel;
     }
 
 
     public void ingest() {
+        Document testDoc = new Document("维度验证文本");
+
+        float[] testEmbedding = this.embeddingModel.embed(testDoc);
+        int actualDims = testEmbedding.length;
+        System.out.println("实际嵌入维度: " + actualDims + " | 配置维度: 1536");
+
         List <Document> documents = List.of(
                 new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
                 new Document("The World is Big and Salvation Lurks Around the Corner"),
