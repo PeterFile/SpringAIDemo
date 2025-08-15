@@ -13,6 +13,7 @@ spring:
       elasticsearch:
         initialize-schema: true
         index-name: custom-index
+        similarity: cosine
     zhipuai:
       api-key: ${SPRING_AI_ZHIPU_API_KEY:}
       chat:
@@ -21,4 +22,3 @@ spring:
       embedding:
         options:
           model: embedding-3
-          dimensions: 1536

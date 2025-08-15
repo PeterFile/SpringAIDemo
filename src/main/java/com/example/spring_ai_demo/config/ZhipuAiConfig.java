@@ -13,21 +13,4 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 public class ZhipuAiConfig {
 
-    @Value("${spring.ai.zhipuai.api-key}")
-    private String apiKey;
-
-    @Bean
-    public ZhiPuAiApi zhiPuAiApi() {
-        return new ZhiPuAiApi(apiKey);
-    }
-
-    @Bean
-    @Primary
-    public EmbeddingModel zhipuAiEmbeddingModel(ZhiPuAiApi zhiPuAiApi) {
-        return new ZhiPuAiEmbeddingModel(zhiPuAiApi, MetadataMode.EMBED,
-                ZhiPuAiEmbeddingOptions.builder()
-                        .model("embedding-3")
-                        .dimensions(1536)
-                        .build());
-    }
 }

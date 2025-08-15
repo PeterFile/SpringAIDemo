@@ -36,9 +36,11 @@ public class ElasticsearchRAGService {
         System.out.println("实际嵌入维度: " + actualDims + " | 配置维度: 1536");
 
         List <Document> documents = List.of(
-                new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!", Map.of("meta1", "meta1")),
-                new Document("The World is Big and Salvation Lurks Around the Corner"),
-                new Document("You walk forward facing the past and you turn back toward the future.", Map.of("meta2", "meta2")));
+                new Document("苹果公司在2023年秋季发布会上推出了iPhone 15系列手机，该系列采用了USB-C接口，并对摄像头系统进行了升级。", Map.of("category", "科技")),
+                new Document("马里亚纳海沟是地球上已知最深的海沟，其最深处挑战者深渊的深度约为11000米。", Map.of("category", "地理")),
+                new Document("梵高的名画《星夜》目前收藏于纽约现代艺术博物馆（MoMA）。这幅画以其独特的漩涡状笔触和生动的色彩而闻名于世。", Map.of("category", "艺术")),
+                new Document("光合作用是植物、藻类和某些细菌利用光能将二氧化碳和水转化为有机物并释放氧气的过程。", Map.of("category", "生物")),
+                new Document("日本的京都是一座以其古老的寺庙、美丽的花园和传统的艺伎区而闻名的城市。", Map.of("category", "旅游")));
 
         // Add the documents to Elasticsearch
         try {
@@ -50,34 +52,30 @@ public class ElasticsearchRAGService {
     }
 
     public String directRag(String question) {
-        // Query the vector store for documents related to the question
         List<Document> vectorStoreResult =
                 vectorStore.doSimilaritySearch(SearchRequest.builder().query(question).topK(5).build());
 
-        // Merging the documents into a single string
         String documents = vectorStoreResult.stream()
                 .map(Document::getText)
                 .collect(Collectors.joining(System.lineSeparator()));
 
-        // Exit if the vector search didn't find any results
         if (documents.isEmpty()) {
             return "No relevant context found. Please change your question.";
         }
-
-        // Setting the prompt with the context
+        System.out.println("获取到的文档：" + documents);
         String prompt = """
-           Use the information from the DOCUMENTS section to provide accurate answers to the
-           question in the QUESTION section.
-           If unsure, simply state that you don't know.
-          
-           DOCUMENTS:
-           """ + documents
-                + """
-           QUESTION:
+           你是一个智能问答助手。
+           你的任务是：严格根据下面【文档】部分提供的内容，用中文回答【问题】。
+           - 只使用【文档】中的信息，不要依赖任何外部知识。
+           - 如果【文档】内容无法回答【问题】，就直接说：“根据提供的文档，我无法回答这个问题。”
+           - 你的回答应简洁、准确并完全使用中文。
+        
+           【文档】:
+           """ + documents+ """
+        
+           【问题】:
            """ + question;
 
-
-        // Calling the chat model with the question
         return chatClient
                 .prompt()
                 .user(prompt)
