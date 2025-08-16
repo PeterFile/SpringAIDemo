@@ -1,11 +1,6 @@
 server:
-  port: 8180
+  port: 8091
 spring:
-  application:
-    name: ai_server
-  cloud:
-    nacos:
-      server-addr: 192.168.85.129:8848
   elasticsearch:
     uris: 192.168.85.129:9200
   ai:
@@ -15,10 +10,14 @@ spring:
         index-name: custom-index
         similarity: cosine
     zhipuai:
-      api-key: ${SPRING_AI_ZHIPU_API_KEY:}
+      api-key: ${SPRING_AI_ZHIPU_API_KEY:ce2ff390ca4245aca42d30742c8f0948.DTmePxPPh3omhU8i}
       chat:
         options:
           model: ${SPRING_AI_ZHIPU_MODEL:glm-4.5}
       embedding:
         options:
           model: embedding-3
+
+logging:
+  level:
+    com.example.spring_ai_demo.client: DEBUG
