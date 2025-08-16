@@ -2,6 +2,7 @@ package com.example.spring_ai_demo.controller;
 
 import com.example.spring_ai_demo.dto.LoadProgress;
 import com.example.spring_ai_demo.service.ElasticsearchRAGService;
+import com.example.spring_ai_demo.service.MultiThreadElasticsearchRAGService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +15,7 @@ import java.util.Map;
 public class ItemRAGController {
 
     private final ElasticsearchRAGService elasticsearchRAGService;
+    private final MultiThreadElasticsearchRAGService multiThreadService;
 
     /**
      * 从 item-service 加载所有商品数据到向量数据库（新任务）
@@ -137,6 +139,76 @@ public class ItemRAGController {
             result.put("success", false);
             result.put("message", "超安全模式加载失败: " + e.getMessage());
         }
+        return result;
+    }
+
+    /**
+     * 多线程加载 - 高性能模式
+     */
+    @PostMapping("/multi-thread-load-items")
+    public Map<String, Object> multiThreadLoadItems(@RequestParam(required = false) Integer pageSize,
+                                                   @RequestParam(required = false) Integer batchSize,
+                                                   @RequestParam(required = false) Integer threadCount) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            String taskId = multiThreadService.loadAllItemsIntoVectorStoreMultiThread(null, pageSize, batchSize, threadCount);
+            result.put("success", true);
+            result.put("taskId", taskId);
+            result.put("message", "多线程加载任务已启动（高性能模式）");
+            result.put("threadCount", threadCount != null ? threadCount : 3);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "多线程加载失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    /**
+     * 恢复多线程加载任务
+     */
+    @PostMapping("/resume-multi-thread-load/{taskId}")
+    public Map<String, Object> resumeMultiThreadLoad(@PathVariable String taskId,
+                                                    @RequestParam(required = false) Integer pageSize,
+                                                    @RequestParam(required = false) Integer batchSize,
+                                                    @RequestParam(required = false) Integer threadCount) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            String resumedTaskId = multiThreadService.loadAllItemsIntoVectorStoreMultiThread(taskId, pageSize, batchSize, threadCount);
+            result.put("success", true);
+            result.put("taskId", resumedTaskId);
+            result.put("message", "多线程加载任务已恢复");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "恢复多线程加载任务失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    /**
+     * 获取多线程任务进度
+     */
+    @GetMapping("/multi-thread-progress/{taskId}")
+    public LoadProgress getMultiThreadProgress(@PathVariable String taskId) {
+        return multiThreadService.getLoadProgress(taskId);
+    }
+
+    /**
+     * 获取所有多线程任务进度
+     */
+    @GetMapping("/multi-thread-progress")
+    public Map<String, LoadProgress> getAllMultiThreadProgress() {
+        return multiThreadService.getAllLoadProgress();
+    }
+
+    /**
+     * 删除多线程任务记录
+     */
+    @DeleteMapping("/multi-thread-task/{taskId}")
+    public Map<String, Object> removeMultiThreadTask(@PathVariable String taskId) {
+        Map<String, Object> result = new HashMap<>();
+        boolean success = multiThreadService.removeTask(taskId);
+        result.put("success", success);
+        result.put("message", success ? "多线程任务记录已删除" : "删除多线程任务记录失败");
         return result;
     }
 }

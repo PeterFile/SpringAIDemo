@@ -57,15 +57,38 @@ public interface ItemServiceClient {
 - Elasticsearch (192.168.85.129:9200)
 - item-service 微服务
 
-### 2. 加载商品数据
+### 2. 选择加载模式
 
-#### 启动新的加载任务
+#### 单线程模式（稳定性优先）
+适合网络不稳定或资源有限的环境
+
+#### 多线程模式（性能优先）
+适合网络稳定且需要快速处理大量数据的场景
+
+### 3. 加载商品数据
+
+#### 单线程加载（稳定模式）
 ```bash
-# 使用默认配置
-curl -X POST http://localhost:8180/api/item-rag/load-items
+# 超安全模式（单条处理）
+curl -X POST http://localhost:8091/api/item-rag/ultra-safe-load-items
 
-# 自定义页面大小和批处理大小
-curl -X POST "http://localhost:8180/api/item-rag/load-items?pageSize=200&batchSize=100"
+# 安全模式（小批量）
+curl -X POST http://localhost:8091/api/item-rag/safe-load-items
+
+# 自定义参数
+curl -X POST "http://localhost:8091/api/item-rag/load-items?pageSize=50&batchSize=5"
+```
+
+#### 多线程加载（高性能模式）
+```bash
+# 默认多线程配置（3线程）
+curl -X POST http://localhost:8091/api/item-rag/multi-thread-load-items
+
+# 自定义多线程配置
+curl -X POST "http://localhost:8091/api/item-rag/multi-thread-load-items?pageSize=100&batchSize=10&threadCount=5"
+
+# 高性能配置（适合网络良好环境）
+curl -X POST "http://localhost:8091/api/item-rag/multi-thread-load-items?pageSize=100&batchSize=10&threadCount=5"
 ```
 
 #### 查看加载进度
