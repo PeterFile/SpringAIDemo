@@ -101,4 +101,42 @@ public class ItemRAGController {
     public String queryItems(@RequestParam String question) {
         return elasticsearchRAGService.directRag(question);
     }
+
+    /**
+     * 安全模式加载 - 使用更小的批处理大小和更多重试
+     */
+    @PostMapping("/safe-load-items")
+    public Map<String, Object> safeLoadItems() {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            // 使用更小的批处理大小：每页20条，每批3条
+            String taskId = elasticsearchRAGService.loadAllItemsIntoVectorStore(null, 20, 3);
+            result.put("success", true);
+            result.put("taskId", taskId);
+            result.put("message", "安全模式加载任务已启动（小批量处理）");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "安全模式加载失败: " + e.getMessage());
+        }
+        return result;
+    }
+
+    /**
+     * 超安全模式加载 - 单条处理，最大稳定性
+     */
+    @PostMapping("/ultra-safe-load-items")
+    public Map<String, Object> ultraSafeLoadItems() {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            // 超小批量：每页10条，每批1条（实际上是单条处理）
+            String taskId = elasticsearchRAGService.loadAllItemsIntoVectorStore(null, 10, 1);
+            result.put("success", true);
+            result.put("taskId", taskId);
+            result.put("message", "超安全模式加载任务已启动（单条处理，最大稳定性）");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "超安全模式加载失败: " + e.getMessage());
+        }
+        return result;
+    }
 }

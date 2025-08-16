@@ -17,6 +17,12 @@ spring:
       embedding:
         options:
           model: embedding-3
+    retry:
+      max-attempts: 5
+      backoff:
+        initial-interval: 2s
+        max-interval: 30s
+        multiplier: 2
 
 logging:
   level:
