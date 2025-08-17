@@ -1,8 +1,37 @@
 server:
   port: 8091
 spring:
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 30000
+            read-timeout: 120000
+            logger-level: basic
   elasticsearch:
     uris: 192.168.85.129:9200
+#  rabbitmq:
+#    host: 192.168.85.129
+#    port: 5672
+#    username: ${RABBITMQ_USERNAME:guest}
+#    password: ${RABBITMQ_PASSWORD:guest}
+#    virtual-host: /
+#    listener:
+#      simple:
+#        # 手动确认模式
+#        acknowledge-mode: manual
+#        # 并发消费者数量
+#        concurrency: 2
+#        max-concurrency: 5
+#        # 预取数量
+#        prefetch: 1
+#        # 重试配置
+#        retry:
+#          enabled: true
+#          initial-interval: 1000
+#          max-attempts: 3
+#          multiplier: 2
   ai:
     vectorstore:
       elasticsearch:
