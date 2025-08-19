@@ -1,8 +1,8 @@
 package com.example.spring_ai_demo.controller;
 
 import com.example.spring_ai_demo.dto.LoadProgress;
-import com.example.spring_ai_demo.service.ElasticsearchRAGService;
-import com.example.spring_ai_demo.service.MultiThreadElasticsearchRAGService;
+import com.example.spring_ai_demo.service.MilvusRAGService;
+import com.example.spring_ai_demo.service.MultiThreadMilvusRAGService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,8 +14,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ItemRAGController {
 
-    private final ElasticsearchRAGService elasticsearchRAGService;
-    private final MultiThreadElasticsearchRAGService multiThreadService;
+    private final MilvusRAGService elasticsearchRAGService;
+    private final MultiThreadMilvusRAGService multiThreadService;
 
     /**
      * 从 item-service 加载所有商品数据到向量数据库（新任务）

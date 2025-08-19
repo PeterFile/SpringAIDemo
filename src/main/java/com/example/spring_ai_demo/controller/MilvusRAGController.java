@@ -1,7 +1,7 @@
 package com.example.spring_ai_demo.controller;
 
 
-import com.example.spring_ai_demo.service.ElasticsearchRAGService;
+import com.example.spring_ai_demo.service.MilvusRAGService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,10 +12,10 @@ import static java.lang.Thread.sleep;
 
 @RestController
 @RequestMapping("/api/rag")
-public class ElasticsearchRAGController {
-    private final ElasticsearchRAGService ragService;
+public class MilvusRAGController {
+    private final MilvusRAGService ragService;
 
-    public ElasticsearchRAGController(ElasticsearchRAGService ragService) {
+    public MilvusRAGController(MilvusRAGService ragService) {
         this.ragService = ragService;
     }
 

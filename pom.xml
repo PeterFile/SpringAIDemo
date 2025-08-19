@@ -90,7 +90,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-starter-vector-store-elasticsearch</artifactId>
+			<artifactId>spring-ai-starter-vector-store-milvus</artifactId>
 		</dependency>
 
 		<dependency>

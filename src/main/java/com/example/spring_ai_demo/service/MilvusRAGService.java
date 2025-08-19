@@ -10,7 +10,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
+import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.UnknownContentTypeException;
 
@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class ElasticsearchRAGService {
+public class MilvusRAGService {
 
-    private final ElasticsearchVectorStore vectorStore;
+    private final MilvusVectorStore vectorStore;
     private final ChatClient chatClient;
     private final EmbeddingModel embeddingModel;
     private final ItemServiceClient itemServiceClient;
@@ -39,10 +39,10 @@ public class ElasticsearchRAGService {
     private static final int DEFAULT_PAGE_SIZE = 100;
     private static final int DEFAULT_BATCH_SIZE = 10; // 减小批处理大小，避免embedding API超时
 
-    public ElasticsearchRAGService(ElasticsearchVectorStore vectorStore, 
-                                 ChatClient.Builder chatClient, 
-                                 EmbeddingModel embeddingModel,
-                                 ItemServiceClient itemServiceClient) {
+    public MilvusRAGService(MilvusVectorStore vectorStore,
+                            ChatClient.Builder chatClient,
+                            EmbeddingModel embeddingModel,
+                            ItemServiceClient itemServiceClient) {
         this.vectorStore = vectorStore;
         this.chatClient = chatClient.build();
         this.embeddingModel = embeddingModel;
@@ -50,14 +50,14 @@ public class ElasticsearchRAGService {
     }
 
     /**
-     * 从 item-service 加载所有商品数据到 Elasticsearch 向量数据库（支持断点续传）
+     * 从 item-service 加载所有商品数据到 Milvus 向量数据库（支持断点续传）
      */
     public String loadAllItemsIntoVectorStore() {
         return loadAllItemsIntoVectorStore(null, DEFAULT_PAGE_SIZE, DEFAULT_BATCH_SIZE);
     }
     
     /**
-     * 从 item-service 加载所有商品数据到 Elasticsearch 向量数据库（支持断点续传）
+     * 从 item-service 加载所有商品数据到 Milvus 向量数据库（支持断点续传）
      * 
      * @param resumeTaskId 要恢复的任务ID，如果为null则创建新任务
      * @param pageSize 每页获取的数据量
@@ -440,7 +440,7 @@ public class ElasticsearchRAGService {
                 new Document("光合作用是植物、藻类和某些细菌利用光能将二氧化碳和水转化为有机物并释放氧气的过程。", Map.of("category", "生物")),
                 new Document("日本的京都是一座以其古老的寺庙、美丽的花园和传统的艺伎区而闻名的城市。", Map.of("category", "旅游")));
 
-        // Add the documents to Elasticsearch
+        // Add the documents to Milvus
         try {
             vectorStore.add(documents);
         } catch (UnknownContentTypeException ex) {

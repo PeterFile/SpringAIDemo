@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
+import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -22,7 +22,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class VectorStoreSyncService {
 
-    private final ElasticsearchVectorStore vectorStore;
+    private final MilvusVectorStore vectorStore;
     private final ItemServiceClient itemServiceClient;
 
     /**

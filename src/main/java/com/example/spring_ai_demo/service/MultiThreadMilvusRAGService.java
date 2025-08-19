@@ -7,9 +7,8 @@ import com.example.spring_ai_demo.dto.PageDTO;
 import com.example.spring_ai_demo.dto.PageQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore;
+import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,9 +19,9 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class MultiThreadElasticsearchRAGService {
+public class MultiThreadMilvusRAGService {
 
-    private final ElasticsearchVectorStore vectorStore;
+    private final MilvusVectorStore vectorStore;
     private final ItemServiceClient itemServiceClient;
     private final Executor vectorProcessExecutor;
     private final Executor dataFetchExecutor;
@@ -38,10 +37,10 @@ public class MultiThreadElasticsearchRAGService {
     private static final int DEFAULT_BATCH_SIZE = 5;
     private static final int DEFAULT_THREAD_COUNT = 3;
 
-    public MultiThreadElasticsearchRAGService(ElasticsearchVectorStore vectorStore,
-                                            ItemServiceClient itemServiceClient,
-                                            @Qualifier("vectorProcessExecutor") Executor vectorProcessExecutor,
-                                            @Qualifier("dataFetchExecutor") Executor dataFetchExecutor) {
+    public MultiThreadMilvusRAGService(MilvusVectorStore vectorStore,
+                                       ItemServiceClient itemServiceClient,
+                                       @Qualifier("vectorProcessExecutor") Executor vectorProcessExecutor,
+                                       @Qualifier("dataFetchExecutor") Executor dataFetchExecutor) {
         this.vectorStore = vectorStore;
         this.itemServiceClient = itemServiceClient;
         this.vectorProcessExecutor = vectorProcessExecutor;
