@@ -7,9 +7,20 @@ import com.example.spring_ai_demo.dto.PageDTO;
 import com.example.spring_ai_demo.dto.PageQuery;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.generation.augmentation.ContextualQueryAugmenter;
+import org.springframework.ai.rag.generation.augmentation.QueryAugmenter;
+import org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer;
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
+import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.UnknownContentTypeException;
@@ -31,6 +42,7 @@ public class MilvusRAGService {
     private final ChatClient chatClient;
     private final EmbeddingModel embeddingModel;
     private final ItemServiceClient itemServiceClient;
+//    private final RetrievalAugmentationAdvisor productAdvisor;
     
     // 用于存储加载进度的内存缓存
     private final Map<String, LoadProgress> progressCache = new ConcurrentHashMap<>();
@@ -47,6 +59,7 @@ public class MilvusRAGService {
         this.chatClient = chatClient.build();
         this.embeddingModel = embeddingModel;
         this.itemServiceClient = itemServiceClient;
+//        this.productAdvisor = productAdvisor;
     }
 
     /**
@@ -450,41 +463,47 @@ public class MilvusRAGService {
     }
 
     public String directRag(String question) {
-        List<Document> vectorStoreResult =
-                vectorStore.doSimilaritySearch(SearchRequest.builder().query(question).topK(5).build());
+        VectorStoreDocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
+                .vectorStore(vectorStore)
+                .similarityThreshold(0.5)
+                .build();
 
-        String documents = vectorStoreResult.stream()
-                .map(Document::getText)
-                .collect(Collectors.joining(System.lineSeparator()));
+        PromptTemplate customPromptTemplate = new PromptTemplate("""
+            你是一个智能商品推荐助手。
+            你的任务是：严格根据下面【商品信息】部分提供的内容，用中文回答【问题】。
+                               
+            回答规则：
+            - 只使用【商品信息】中的信息，不要依赖任何外部知识。
+            - 如果【商品信息】内容无法回答【问题】，就直接说："根据现有商品信息，我无法回答这个问题。"
+            - 当推荐商品时，请包含商品的名称、价格、品牌、分类、库存、销量、评论数等关键信息。
+            - 你的回答应简洁、准确并完全使用中文。
+            - 如果涉及多个商品，请按相关性排序展示。
+            - 可以根据销量和评论数来判断商品的受欢迎程度。
+            - 注意库存情况，优先推荐有库存的商品。
+                        
+            【商品信息】:
+            {context}
+                        
+            【问题】:
+            {query}
+            """);
 
-        if (documents.isEmpty()) {
-            return "没有找到相关的商品信息，请尝试其他关键词。";
-        }
-        
-        log.info("获取到的文档：{}", documents);
-        
-        String prompt = """
-           你是一个智能商品推荐助手。
-           你的任务是：严格根据下面【商品信息】部分提供的内容，用中文回答【问题】。
-           
-           回答规则：
-           - 只使用【商品信息】中的信息，不要依赖任何外部知识
-           - 如果【商品信息】内容无法回答【问题】，就直接说："根据现有商品信息，我无法回答这个问题。"
-           - 当推荐商品时，请包含商品的名称、价格、品牌、分类、库存、销量、评论数等关键信息
-           - 你的回答应简洁、准确并完全使用中文
-           - 如果涉及多个商品，请按相关性排序展示
-           - 可以根据销量和评论数来判断商品的受欢迎程度
-           - 注意库存情况，优先推荐有库存的商品
-        
-           【商品信息】:
-           """ + documents+ """
-        
-           【问题】:
-           """ + question;
+        // 2. 定义查询增强器 (Augmenter)
+        QueryAugmenter contextualQueryAugmenter = ContextualQueryAugmenter.builder().allowEmptyContext(true).promptTemplate(customPromptTemplate).build();
+
+        // 3. 构建并返回 RetrievalAugmentationAdvisor
+        Advisor advisor = RetrievalAugmentationAdvisor.builder()
+                .queryTransformers(RewriteQueryTransformer.builder()
+                        .chatClientBuilder(chatClient.mutate())
+                        .build())
+                .documentRetriever(documentRetriever)
+                .queryAugmenter(contextualQueryAugmenter)
+                .build();
 
         return chatClient
                 .prompt()
-                .user(prompt)
+                .user(question)
+                .advisors(advisor)
                 .call()
                 .content();
     }
