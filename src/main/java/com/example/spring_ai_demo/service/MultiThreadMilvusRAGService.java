@@ -25,11 +25,9 @@ public class MultiThreadMilvusRAGService {
     private final ItemServiceClient itemServiceClient;
     private final Executor vectorProcessExecutor;
     private final Executor dataFetchExecutor;
-    
-    // 用于存储加载进度的内存缓存
+
     private final Map<String, LoadProgress> progressCache = new ConcurrentHashMap<>();
-    
-    // 限流器：控制向量化API的调用频率
+
     private final Semaphore vectorApiSemaphore = new Semaphore(3); // 最多3个并发向量化请求
     
     // 默认配置
@@ -365,8 +363,8 @@ public class MultiThreadMilvusRAGService {
         metadata.put("isAD", item.getIsAD());
         metadata.put("status", item.getStatus());
         metadata.put("type", "product");
-        
-        return new Document(contentBuilder.toString().trim(), metadata);
+
+        return new Document(String.valueOf(item.getId()), contentBuilder.toString().trim(), metadata);
     }
 
     /**

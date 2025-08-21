@@ -5,6 +5,7 @@ import com.example.spring_ai_demo.service.MilvusRAGService;
 import com.example.spring_ai_demo.service.MultiThreadMilvusRAGService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +15,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ItemRAGController {
 
-    private final MilvusRAGService elasticsearchRAGService;
+    private final MilvusRAGService milvusRAGService;
     private final MultiThreadMilvusRAGService multiThreadService;
 
     /**
@@ -25,7 +26,7 @@ public class ItemRAGController {
                                        @RequestParam(required = false) Integer batchSize) {
         Map<String, Object> result = new HashMap<>();
         try {
-            String taskId = elasticsearchRAGService.loadAllItemsIntoVectorStore(null, pageSize, batchSize);
+            String taskId = milvusRAGService.loadAllItemsIntoVectorStore(null, pageSize, batchSize);
             result.put("success", true);
             result.put("taskId", taskId);
             result.put("message", "商品数据加载任务已启动");
@@ -45,7 +46,7 @@ public class ItemRAGController {
                                         @RequestParam(required = false) Integer batchSize) {
         Map<String, Object> result = new HashMap<>();
         try {
-            String resumedTaskId = elasticsearchRAGService.loadAllItemsIntoVectorStore(taskId, pageSize, batchSize);
+            String resumedTaskId = milvusRAGService.loadAllItemsIntoVectorStore(taskId, pageSize, batchSize);
             result.put("success", true);
             result.put("taskId", resumedTaskId);
             result.put("message", "商品数据加载任务已恢复");
@@ -61,7 +62,7 @@ public class ItemRAGController {
      */
     @GetMapping("/progress/{taskId}")
     public LoadProgress getProgress(@PathVariable String taskId) {
-        return elasticsearchRAGService.getLoadProgress(taskId);
+        return milvusRAGService.getLoadProgress(taskId);
     }
 
     /**
@@ -69,7 +70,7 @@ public class ItemRAGController {
      */
     @GetMapping("/progress")
     public Map<String, LoadProgress> getAllProgress() {
-        return elasticsearchRAGService.getAllLoadProgress();
+        return milvusRAGService.getAllLoadProgress();
     }
 
     /**
@@ -78,7 +79,7 @@ public class ItemRAGController {
     @PostMapping("/pause/{taskId}")
     public Map<String, Object> pauseTask(@PathVariable String taskId) {
         Map<String, Object> result = new HashMap<>();
-        boolean success = elasticsearchRAGService.pauseTask(taskId);
+        boolean success = milvusRAGService.pauseTask(taskId);
         result.put("success", success);
         result.put("message", success ? "任务已暂停" : "暂停任务失败");
         return result;
@@ -90,7 +91,7 @@ public class ItemRAGController {
     @DeleteMapping("/task/{taskId}")
     public Map<String, Object> removeTask(@PathVariable String taskId) {
         Map<String, Object> result = new HashMap<>();
-        boolean success = elasticsearchRAGService.removeTask(taskId);
+        boolean success = milvusRAGService.removeTask(taskId);
         result.put("success", success);
         result.put("message", success ? "任务记录已删除" : "删除任务记录失败");
         return result;
@@ -100,8 +101,8 @@ public class ItemRAGController {
      * 基于商品数据进行RAG问答
      */
     @GetMapping("/query")
-    public String queryItems(@RequestParam String question) {
-        return elasticsearchRAGService.directRag(question);
+    public Flux<String> queryItems(@RequestParam String question) {
+        return milvusRAGService.directRag(question);
     }
 
     /**
@@ -112,7 +113,7 @@ public class ItemRAGController {
         Map<String, Object> result = new HashMap<>();
         try {
             // 使用更小的批处理大小：每页20条，每批3条
-            String taskId = elasticsearchRAGService.loadAllItemsIntoVectorStore(null, 20, 3);
+            String taskId = milvusRAGService.loadAllItemsIntoVectorStore(null, 20, 3);
             result.put("success", true);
             result.put("taskId", taskId);
             result.put("message", "安全模式加载任务已启动（小批量处理）");
@@ -131,7 +132,7 @@ public class ItemRAGController {
         Map<String, Object> result = new HashMap<>();
         try {
             // 超小批量：每页10条，每批1条（实际上是单条处理）
-            String taskId = elasticsearchRAGService.loadAllItemsIntoVectorStore(null, 10, 1);
+            String taskId = milvusRAGService.loadAllItemsIntoVectorStore(null, 10, 1);
             result.put("success", true);
             result.put("taskId", taskId);
             result.put("message", "超安全模式加载任务已启动（单条处理，最大稳定性）");

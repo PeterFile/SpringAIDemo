@@ -24,6 +24,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.UnknownContentTypeException;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -46,6 +47,8 @@ public class MilvusRAGService {
     
     // 用于存储加载进度的内存缓存
     private final Map<String, LoadProgress> progressCache = new ConcurrentHashMap<>();
+
+    private final RetrievalAugmentationAdvisor productAdvisor;
     
     // 默认配置
     private static final int DEFAULT_PAGE_SIZE = 100;
@@ -54,12 +57,13 @@ public class MilvusRAGService {
     public MilvusRAGService(MilvusVectorStore vectorStore,
                             ChatClient.Builder chatClient,
                             EmbeddingModel embeddingModel,
-                            ItemServiceClient itemServiceClient) {
+                            ItemServiceClient itemServiceClient, RetrievalAugmentationAdvisor productAdvisor) {
         this.vectorStore = vectorStore;
         this.chatClient = chatClient.build();
         this.embeddingModel = embeddingModel;
         this.itemServiceClient = itemServiceClient;
 //        this.productAdvisor = productAdvisor;
+        this.productAdvisor = productAdvisor;
     }
 
     /**
@@ -439,72 +443,13 @@ public class MilvusRAGService {
         return new Document(contentBuilder.toString().trim(), metadata);
     }
 
-    public void ingest() {
-        Document testDoc = new Document("维度验证文本");
-
-        float[] testEmbedding = this.embeddingModel.embed(testDoc);
-        int actualDims = testEmbedding.length;
-        System.out.println("实际嵌入维度: " + actualDims + " | 配置维度: 1536");
-
-        List <Document> documents = List.of(
-                new Document("苹果公司在2023年秋季发布会上推出了iPhone 15系列手机，该系列采用了USB-C接口，并对摄像头系统进行了升级。", Map.of("category", "科技")),
-                new Document("马里亚纳海沟是地球上已知最深的海沟，其最深处挑战者深渊的深度约为11000米。", Map.of("category", "地理")),
-                new Document("梵高的名画《星夜》目前收藏于纽约现代艺术博物馆（MoMA）。这幅画以其独特的漩涡状笔触和生动的色彩而闻名于世。", Map.of("category", "艺术")),
-                new Document("光合作用是植物、藻类和某些细菌利用光能将二氧化碳和水转化为有机物并释放氧气的过程。", Map.of("category", "生物")),
-                new Document("日本的京都是一座以其古老的寺庙、美丽的花园和传统的艺伎区而闻名的城市。", Map.of("category", "旅游")));
-
-        // Add the documents to Milvus
-        try {
-            vectorStore.add(documents);
-        } catch (UnknownContentTypeException ex) {
-            String rawResponse = ex.getResponseBodyAsString();
-            System.out.println("API错误响应: " + rawResponse);
-        }
-    }
-
-    public String directRag(String question) {
-        VectorStoreDocumentRetriever documentRetriever = VectorStoreDocumentRetriever.builder()
-                .vectorStore(vectorStore)
-                .similarityThreshold(0.5)
-                .build();
-
-        PromptTemplate customPromptTemplate = new PromptTemplate("""
-            你是一个智能商品推荐助手。
-            你的任务是：严格根据下面【商品信息】部分提供的内容，用中文回答【问题】。
-                               
-            回答规则：
-            - 只使用【商品信息】中的信息，不要依赖任何外部知识。
-            - 如果【商品信息】内容无法回答【问题】，就直接说："根据现有商品信息，我无法回答这个问题。"
-            - 当推荐商品时，请包含商品的名称、价格、品牌、分类、库存、销量、评论数等关键信息。
-            - 你的回答应简洁、准确并完全使用中文。
-            - 如果涉及多个商品，请按相关性排序展示。
-            - 可以根据销量和评论数来判断商品的受欢迎程度。
-            - 注意库存情况，优先推荐有库存的商品。
-                        
-            【商品信息】:
-            {context}
-                        
-            【问题】:
-            {query}
-            """);
-
-        // 2. 定义查询增强器 (Augmenter)
-        QueryAugmenter contextualQueryAugmenter = ContextualQueryAugmenter.builder().allowEmptyContext(true).promptTemplate(customPromptTemplate).build();
-
-        // 3. 构建并返回 RetrievalAugmentationAdvisor
-        Advisor advisor = RetrievalAugmentationAdvisor.builder()
-                .queryTransformers(RewriteQueryTransformer.builder()
-                        .chatClientBuilder(chatClient.mutate())
-                        .build())
-                .documentRetriever(documentRetriever)
-                .queryAugmenter(contextualQueryAugmenter)
-                .build();
+    public Flux<String> directRag(String question) {
 
         return chatClient
                 .prompt()
                 .user(question)
-                .advisors(advisor)
-                .call()
+                .advisors(productAdvisor)
+                .stream()
                 .content();
     }
 }
